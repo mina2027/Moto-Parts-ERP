@@ -1,0 +1,34 @@
+version: 2
+updates:
+  # Each project carries its own lockfile, so npm updates are tracked per directory.
+  - package-ecosystem: npm
+    directories:
+      - /erp-backend
+      - /erp-frontend
+      - /pos-desktop
+    schedule:
+      interval: weekly
+    open-pull-requests-limit: 5
+    groups:
+      # One PR per ecosystem keeps the lockfile churn reviewable.
+      dev-tooling:
+        patterns: ['@types/*', 'eslint*', 'typescript*', 'vitest', 'vite', '@vitejs/*']
+      react:
+        patterns: ['react', 'react-dom', '@radix-ui/*', '@tanstack/*']
+      backend:
+        patterns: ['express*', 'mongoose', 'pino*', 'socket.io*', 'helmet', 'zod']
+
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: monthly
+
+  - package-ecosystem: docker
+    directory: /erp-backend
+    schedule:
+      interval: monthly
+
+  - package-ecosystem: docker
+    directory: /erp-frontend
+    schedule:
+      interval: monthly

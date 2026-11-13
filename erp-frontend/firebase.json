@@ -1,0 +1,18 @@
+{
+  "_comment": "SPA fallback only: Firebase Hosting cannot proxy arbitrary hosts, so /api MUST NOT be requested on this origin (it would resolve to index.html). The production build calls the API by absolute URL - see .env.production and README.md#cross-origin-deployment-firebase-hosting--azure-app-service.",
+  "hosting": {
+    "site": "moto-parts",
+    "public": "dist",
+    "ignore": [
+      "firebase.json",
+      "**/.*",
+      "**/node_modules/**"
+    ],
+    "rewrites": [
+      {
+        "source": "**",
+        "destination": "/index.html"
+      }
+    ]
+  }
+}

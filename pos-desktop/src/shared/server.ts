@@ -1,0 +1,1 @@
+export const FIXED_SERVER_URL = 'https://157.230.162.22';

@@ -1,0 +1,1 @@
+export * from '@moto/ui/primitives/card';

@@ -1,0 +1,243 @@
+# =========================================================
+# Moto ERP + POS - Git Ignore
+# =========================================================
+
+
+# =========================================================
+# Dependencies
+# =========================================================
+node_modules/
+**/node_modules/
+
+
+# =========================================================
+# Build outputs
+# =========================================================
+dist/
+**/dist/
+
+dist-ssr/
+**/dist-ssr/
+
+build/
+**/build/
+
+out/
+**/out/
+
+release/
+**/release/
+
+.vite/
+**/.vite/
+
+coverage/
+**/coverage/
+
+*.tsbuildinfo
+
+
+# =========================================================
+# Environment variables / Secrets
+# =========================================================
+
+# Real environment files
+.env
+.env.*
+**/.env
+**/.env.*
+
+# Keep example environment files
+!.env.example
+!**/.env.example
+
+!.env.docker.example
+!**/.env.docker.example
+
+# Private keys / certificates
+*.pem
+*.key
+*.p12
+*.pfx
+
+
+# =========================================================
+# Local configuration
+# =========================================================
+*.local
+.npmrc.local
+
+
+# =========================================================
+# Logs
+# =========================================================
+*.log
+
+logs/
+**/logs/
+
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+
+# =========================================================
+# Operating system files
+# =========================================================
+.DS_Store
+Thumbs.db
+desktop.ini
+
+
+# =========================================================
+# IDE / Editor
+# =========================================================
+.idea/
+
+# .vscode is intentionally NOT ignored
+# because project settings are currently tracked.
+
+
+# =========================================================
+# Playwright / Browser test artefacts
+# =========================================================
+.playwright-mcp/
+**/.playwright-mcp/
+
+playwright-report/
+**/playwright-report/
+
+test-results/
+**/test-results/
+
+
+# =========================================================
+# Main audit generated files
+# Keep reports and scripts, ignore generated evidence
+# =========================================================
+/audit/tmp/
+/audit/evidence/
+
+/audit/originals/
+/audit/originals-final/
+/audit/originals-pass2/
+/audit/originals-pass3/
+/audit/originals-release-closure/
+
+
+# =========================================================
+# Backend audit generated evidence
+# =========================================================
+/erp-backend/audit/tmp/
+/erp-backend/audit/evidence/
+
+
+# =========================================================
+# Frontend audit generated evidence
+# =========================================================
+/erp-frontend/audit/tmp/
+/erp-frontend/audit/evidence/
+
+
+# =========================================================
+# POS Desktop audit generated evidence
+# =========================================================
+/pos-desktop/audit/tmp/
+/pos-desktop/audit/evidence/
+
+
+# =========================================================
+# Local databases
+# =========================================================
+*.sqlite
+*.sqlite-shm
+*.sqlite-wal
+
+*.db
+*.db-shm
+*.db-wal
+
+
+# =========================================================
+# Database backups / dumps
+# =========================================================
+*.bson
+*.archive
+
+dump/
+**/dump/
+
+backups/
+**/backups/
+
+
+# =========================================================
+# MongoDB generated database-tools
+# =========================================================
+mongodb-database-tools-*/
+**/mongodb-database-tools-*/
+
+
+# =========================================================
+# Backend user uploads
+# Keep directory itself using .gitkeep
+# =========================================================
+/erp-backend/uploads/*
+!/erp-backend/uploads/.gitkeep
+
+
+# =========================================================
+# POS Desktop native/generated files
+# =========================================================
+/pos-desktop/native/
+
+
+# =========================================================
+# Electron generated files
+# =========================================================
+/pos-desktop/release/
+/pos-desktop/out/
+/pos-desktop/dist/
+
+
+# =========================================================
+# Cache
+# =========================================================
+.cache/
+**/.cache/
+
+.eslintcache
+*.cache
+
+
+# =========================================================
+# Temporary files
+# =========================================================
+tmp/
+**/tmp/
+
+temp/
+**/temp/
+
+*.tmp
+*.temp
+
+*.swp
+*.swo
+*~
+
+
+# =========================================================
+# Windows temporary files
+# =========================================================
+ehthumbs.db
+$RECYCLE.BIN/
+
+
+# =========================================================
+# Misc generated artefacts
+# =========================================================
+*.pid
+*.pid.lock
+*.seed

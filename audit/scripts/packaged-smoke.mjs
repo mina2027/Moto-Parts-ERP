@@ -1,0 +1,11 @@
+import { spawnSync } from 'node:child_process';
+import path from 'node:path';
+import { writeFileSync } from 'node:fs';
+const root = path.resolve(import.meta.dirname, '../..');
+const evidence = path.join(root, process.env.POS_AUDIT_EVIDENCE || 'audit/evidence/pass2');
+const env = { ...process.env, POS_SMOKE: '1', POS_SMOKE_USER_DATA: path.join(evidence, 'packaged-profile') }; delete env.ELECTRON_RUN_AS_NODE;
+const result = spawnSync(path.join(evidence, process.env.POS_AUDIT_PACKAGE || 'package', 'win-unpacked/MotoParts POS.exe'), [], { env, windowsHide: true, encoding: 'utf8', timeout: 30000 });
+writeFileSync(path.join(evidence, 'packaged-smoke.log'), `${result.stdout}\n${result.stderr}\nexit=${result.status}\n`);
+if (result.error) console.error(result.error);
+if (result.status !== 0 || !result.stdout.includes('"smoke":"ok"') || !result.stdout.includes('44.7.0')) process.exit(1);
+console.log('Packaged Electron 44.7.0 + SQLite smoke passed with isolated profile');

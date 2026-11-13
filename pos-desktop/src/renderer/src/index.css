@@ -1,0 +1,88 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --background: 210 20% 98%;
+    --foreground: 222 47% 11%;
+    --card: 0 0% 100%;
+    --card-foreground: 222 47% 11%;
+    --popover: 0 0% 100%;
+    --popover-foreground: 222 47% 11%;
+    --primary: 221 83% 53%;
+    --primary-foreground: 210 40% 98%;
+    --secondary: 210 40% 96%;
+    --secondary-foreground: 222 47% 11%;
+    --muted: 210 40% 96%;
+    --muted-foreground: 215 16% 47%;
+    --accent: 210 40% 94%;
+    --accent-foreground: 222 47% 11%;
+    --destructive: 0 72% 51%;
+    --destructive-foreground: 210 40% 98%;
+    --success: 142 71% 35%;
+    --success-foreground: 0 0% 100%;
+    --warning: 38 92% 50%;
+    --warning-foreground: 0 0% 100%;
+    --info: 199 89% 48%;
+    --info-foreground: 0 0% 100%;
+    --border: 214 32% 91%;
+    --input: 214 32% 88%;
+    --ring: 221 83% 53%;
+    --radius: 0.375rem;
+    --sidebar: 222 47% 11%;
+    --sidebar-foreground: 214 32% 85%;
+    --sidebar-accent: 222 40% 18%;
+    --sidebar-border: 222 40% 20%;
+  }
+  .dark {
+    --background: 222 47% 7%;
+    --foreground: 210 40% 96%;
+    --card: 222 44% 10%;
+    --card-foreground: 210 40% 96%;
+    --popover: 222 44% 10%;
+    --popover-foreground: 210 40% 96%;
+    --primary: 217 91% 60%;
+    --primary-foreground: 222 47% 11%;
+    --secondary: 222 40% 16%;
+    --secondary-foreground: 210 40% 96%;
+    --muted: 222 40% 16%;
+    --muted-foreground: 215 20% 65%;
+    --accent: 222 40% 18%;
+    --accent-foreground: 210 40% 96%;
+    --destructive: 0 63% 45%;
+    --destructive-foreground: 210 40% 98%;
+    --success: 142 60% 42%;
+    --success-foreground: 0 0% 100%;
+    --warning: 38 92% 55%;
+    --warning-foreground: 222 47% 11%;
+    --info: 199 89% 55%;
+    --info-foreground: 222 47% 11%;
+    --border: 222 40% 18%;
+    --input: 222 40% 22%;
+    --ring: 217 91% 60%;
+  }
+  * { @apply border-border; }
+  html, body, #root { height: 100%; }
+  body { @apply bg-background text-foreground antialiased; font-feature-settings: 'tnum'; user-select: none; }
+  input, textarea { user-select: text; }
+}
+
+@layer utilities {
+  .tabular { font-variant-numeric: tabular-nums; }
+  .num { direction: ltr; unicode-bidi: isolate; font-variant-numeric: tabular-nums; }
+}
+
+/* Older compact labels use px utilities; scale them along with the rem-based UI. */
+@media screen {
+  .text-\[9px\] { font-size: calc(9px * var(--ui-font-scale, 1)); }
+  .text-\[10px\] { font-size: calc(10px * var(--ui-font-scale, 1)); }
+  .text-\[11px\] { font-size: calc(11px * var(--ui-font-scale, 1)); }
+}
+
+@media print {
+  html { font-size: 16px !important; }
+  body * { visibility: hidden; }
+  .print-area, .print-area * { visibility: visible; }
+  .print-area { position: absolute; inset: 0; }
+}

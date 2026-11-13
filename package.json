@@ -1,0 +1,30 @@
+{
+  "name": "moto-erp-pos",
+  "private": true,
+  "version": "2.0.0",
+  "type": "module",
+  "description": "Task runner only — erp-backend, erp-frontend and pos-desktop are independent projects with their own installs.",
+  "scripts": {
+    "install:all": "node scripts/run-all.mjs install",
+    "dev": "node scripts/dev.mjs api web",
+    "dev:api": "npm --prefix erp-backend run dev",
+    "dev:web": "npm --prefix erp-frontend run dev",
+    "dev:pos": "npm --prefix pos-desktop run dev",
+    "db": "npm --prefix erp-backend run db",
+    "db:start": "npm --prefix erp-backend run db:start",
+    "db:stop": "npm --prefix erp-backend run db:stop",
+    "db:reset": "npm --prefix erp-backend run db:reset",
+    "init-admin": "npm --prefix erp-backend run init-admin",
+    "docker": "npm --prefix erp-backend run docker --",
+    "docker:stack": "npm --prefix erp-backend run docker:stack --",
+    "pos:dist": "npm --prefix pos-desktop run dist",
+    "build": "node scripts/run-all.mjs build erp-backend erp-frontend",
+    "typecheck": "node scripts/run-all.mjs typecheck",
+    "lint": "node scripts/run-all.mjs lint",
+    "test": "node scripts/run-all.mjs test",
+    "test:integration": "npm --prefix erp-backend run test:integration"
+  },
+  "engines": {
+    "node": ">=22"
+  }
+}

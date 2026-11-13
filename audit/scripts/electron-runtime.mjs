@@ -1,0 +1,56 @@
+import { createRequire } from 'node:module';
+import { spawnSync } from 'node:child_process';
+import { mkdirSync } from 'node:fs';
+import path from 'node:path';
+const root = path.resolve(import.meta.dirname, '../..');
+const desktop = path.join(root, 'pos-desktop');
+const require = createRequire(path.join(desktop, 'package.json'));
+const { build } = require('esbuild');
+const target = path.join(root, process.env.POS_AUDIT_EVIDENCE || 'audit/evidence/pass2', 'runtime'); mkdirSync(target, { recursive: true });
+const entry = `
+const { app, BrowserWindow, safeStorage } = require('electron');
+const assert = require('node:assert/strict');
+const fs = require('node:fs');
+const path = require('node:path');
+const { LocalDb } = require('./src/main/db/database.ts');
+const { AuthStore } = require('./src/main/auth.ts');
+const { invoicePdf, listPrinters } = require('./src/main/printing.ts');
+const { invokeData } = require('./src/main/dataAccess.ts');
+const { autoUpdater } = require('electron-updater');
+const target = ${JSON.stringify(target)};
+app.setPath('userData', path.join(target, 'profile')); app.commandLine.appendSwitch('disable-gpu');
+app.whenReady().then(async () => {
+  const db = new LocalDb(path.join(target, 'runtime.sqlite'));
+  let win;
+  try {
+    assert.equal(process.versions.electron, '44.7.0');
+    db.db.prepare('CREATE TABLE IF NOT EXISTS audit_probe (id TEXT PRIMARY KEY)').run();
+    db.db.prepare('INSERT OR REPLACE INTO audit_probe VALUES (?)').run('synthetic');
+    assert.equal(db.db.prepare('SELECT count(*) n FROM audit_probe').get().n, 1);
+    assert(safeStorage.isEncryptionAvailable(), 'OS encryption required for offline login');
+    const session = { token: 'synthetic', permissions: ['sales.create'], user: { id: 'synthetic', username: 'audit', branchId: 'br-1' } };
+    let auth = new AuthStore(db);
+    await auth.login({ auth: { login: async () => session } }, true, 'audit', 'synthetic-password');
+    auth.logout(); auth = new AuthStore(db);
+    await assert.rejects(() => auth.login(null, false, 'audit', 'wrong'));
+    assert.equal((await auth.login(null, false, 'audit', 'synthetic-password')).user.id, 'synthetic');
+    auth.logout(); await assert.rejects(() => invokeData({ customers: () => [] }, auth.current(), 'br-1', 'customers', null), /AUTH_REQUIRED/);
+    win = new BrowserWindow({ show: false, webPreferences: { sandbox: true, contextIsolation: true, nodeIntegration: false } });
+    const pdf = await invoicePdf(win, { html: '<div dir="rtl">فاتورة اختبار — SYNTHETIC</div>', widthMm: 80, heightMm: null, silent: false, copies: 1 });
+    assert(pdf.subarray(0, 4).toString() === '%PDF'); fs.writeFileSync(path.join(target, 'runtime-receipt.pdf'), pdf);
+    const printers = await listPrinters(win);
+    autoUpdater.autoDownload = false; autoUpdater.autoInstallOnAppQuit = false;
+    autoUpdater.setFeedURL({ provider: 'generic', url: 'http://127.0.0.1:1/audit-no-feed' });
+    const updater = await autoUpdater.checkForUpdates(); assert.equal(updater, null, 'Unpackaged updater must skip checks');
+    const result = { passed: true, electron: process.versions.electron, node: process.versions.node, sqlite: db.db.prepare('SELECT sqlite_version() v').get().v, nativePackage: require('better-sqlite3/package.json').version, osEncryption: true, authentication: 'online synthetic + offline success + wrong password + logout IPC guard', pdfBytes: pdf.length, printers, updater: 'feed configuration and unpackaged skip; signed install remains unverified' };
+    fs.writeFileSync(path.join(target, 'results.json'), JSON.stringify(result, null, 2)); console.log(JSON.stringify(result));
+    win.destroy(); db.close(); app.exit(0);
+  } catch (e) { console.error(e); if(win && !win.isDestroyed()) win.destroy(); db.close(); app.exit(1); }
+});
+`;
+const runtimeFolder = path.join(desktop, 'release/pass2-runtime'); mkdirSync(runtimeFolder, { recursive: true });
+const output = path.join(runtimeFolder, 'entry.cjs');
+await build({ stdin: { contents: entry, resolveDir: desktop, sourcefile: 'audit-runtime.cjs' }, outfile: output, bundle: true, platform: 'node', format: 'cjs', external: ['electron', 'better-sqlite3', 'electron-updater'], nodePaths: [path.join(desktop, 'node_modules')] });
+const env = { ...process.env, NODE_PATH: path.join(desktop, 'node_modules') }; delete env.ELECTRON_RUN_AS_NODE;
+const result = spawnSync(path.join(desktop, 'node_modules/electron/dist/electron.exe'), [output], { cwd: desktop, env, windowsHide: true, stdio: 'inherit', timeout: 60000 });
+if (result.error) console.error(result.error); process.exit(result.status ?? 1);

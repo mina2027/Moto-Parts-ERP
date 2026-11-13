@@ -1,0 +1,155 @@
+name: CI
+
+on:
+  push:
+    branches: [main, master]
+  pull_request:
+  workflow_dispatch:
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  # The Electron binary is only needed to package the desktop app, never to lint or test it.
+  ELECTRON_SKIP_BINARY_DOWNLOAD: '1'
+
+jobs:
+  verify:
+    name: ${{ matrix.project }} · typecheck · lint · test · build
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    strategy:
+      fail-fast: false
+      matrix:
+        project: [erp-backend, erp-frontend, pos-desktop]
+    defaults:
+      run:
+        working-directory: ${{ matrix.project }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: ${{ matrix.project }}/package-lock.json
+
+      - name: Install
+        run: npm ci
+
+      - name: Typecheck
+        run: npm run typecheck
+
+      - name: Lint
+        run: npm run lint
+
+      - name: Test
+        run: npm test
+
+      - name: Build
+        # Packaging the Electron app needs the binary that this workflow skips.
+        if: matrix.project != 'pos-desktop'
+        run: npm run build
+
+  integration:
+    name: API and desktop two-terminal acceptance
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: |
+            erp-backend/package-lock.json
+            pos-desktop/package-lock.json
+      - name: Install backend
+        run: npm --prefix erp-backend ci
+      - name: Install desktop and SQLite test binary
+        run: npm --prefix pos-desktop ci
+      - name: Run cross-project acceptance
+        run: npm run test:integration
+
+  audit:
+    name: ${{ matrix.project }} · dependency audit
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    strategy:
+      fail-fast: false
+      matrix:
+        project: [erp-backend, erp-frontend, pos-desktop]
+    defaults:
+      run:
+        working-directory: ${{ matrix.project }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: ${{ matrix.project }}/package-lock.json
+      - name: Audit runtime dependencies
+        run: npm audit --omit=dev --audit-level=high
+
+  images:
+    name: container images
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+      - uses: docker/setup-buildx-action@v3
+
+      - name: Build API image
+        uses: docker/build-push-action@v6
+        with:
+          context: ./erp-backend
+          push: false
+          load: true
+          tags: moto/api:ci
+          build-args: APP_VERSION=ci
+          cache-from: type=gha,scope=api
+          cache-to: type=gha,mode=max,scope=api
+
+      - name: Build web image
+        uses: docker/build-push-action@v6
+        with:
+          context: ./erp-frontend
+          push: false
+          load: true
+          tags: moto/web:ci
+          build-args: |
+            VITE_PUBLIC_URL=https://erp.example.invalid
+          cache-from: type=gha,scope=web
+          cache-to: type=gha,mode=max,scope=web
+
+      - name: Smoke-test the stack
+        env:
+          APP_VERSION: ci
+          JWT_SECRET: ci-only-jwt-secret-abcdefghijklmnopqrstuvwxyz
+          JWT_REFRESH_SECRET: ci-only-refresh-secret-zyxwvutsrqponmlkjihg
+          CORS_ORIGINS: https://erp.example.invalid
+          PUBLIC_URL: https://erp.example.invalid
+        run: |
+          docker compose --env-file erp-backend/.env.docker.example -f erp-backend/docker-compose.yml -f erp-frontend/docker-compose.yml up -d --no-build mongo mongo-init api web
+          ok=0
+          for _ in $(seq 1 45); do
+            if curl -fsS http://127.0.0.1:4000/api/health/ready >/dev/null \
+               && curl -fsS http://127.0.0.1:8080/healthz >/dev/null; then
+              ok=1; break
+            fi
+            sleep 2
+          done
+          if [ "$ok" != 1 ]; then docker compose --env-file erp-backend/.env.docker.example -f erp-backend/docker-compose.yml -f erp-frontend/docker-compose.yml logs --no-color api web mongo; exit 1; fi
+          echo "api ready and web serving"
+
+      - name: Tear down
+        if: always()
+        env:
+          APP_VERSION: ci
+          JWT_SECRET: ci-only-jwt-secret-abcdefghijklmnopqrstuvwxyz
+          JWT_REFRESH_SECRET: ci-only-refresh-secret-zyxwvutsrqponmlkjihg
+          CORS_ORIGINS: https://erp.example.invalid
+          PUBLIC_URL: https://erp.example.invalid
+        run: docker compose --env-file erp-backend/.env.docker.example -f erp-backend/docker-compose.yml -f erp-frontend/docker-compose.yml down -v --remove-orphans

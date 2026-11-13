@@ -1,0 +1,31 @@
+appId: com.motoparts.pos
+productName: MotoParts POS
+copyright: Copyright © 2026 MotoParts
+directories:
+  output: release
+files:
+  - out/**
+  - package.json
+  - '!**/*.map'
+asarUnpack:
+  - '**/*.node'
+win:
+  target:
+    - nsis
+    - portable
+  artifactName: ${productName}-${version}-${arch}.${ext}
+  # No custom icon shipped yet; electron-builder falls back to the default Electron icon.
+nsis:
+  oneClick: false
+  allowToChangeInstallationDirectory: true
+  perMachine: false
+  createDesktopShortcut: always
+  shortcutName: MotoParts POS
+  installerLanguages:
+    - ar_SA
+    - en_US
+portable:
+  artifactName: ${productName}-${version}-portable.${ext}
+# `publish` only shapes latest.yml and is injected by scripts/dist.mjs when POS_UPDATE_URL is set;
+# the runtime feed URL comes from the same variable baked in by electron.vite.config.ts.
+npmRebuild: false

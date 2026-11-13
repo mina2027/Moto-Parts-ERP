@@ -1,0 +1,12 @@
+node_modules
+dist
+out
+release
+.vite
+coverage
+native
+*.tsbuildinfo
+.env
+.env.*
+!.env.example
+*.log

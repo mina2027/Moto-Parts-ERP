@@ -1,0 +1,15 @@
+import { spawn } from 'node:child_process';
+import fs from 'node:fs';
+import path from 'node:path';
+const root = path.resolve(import.meta.dirname, '../..'), [name, relativeCwd, command, ...args] = process.argv.slice(2);
+if (!/^[a-z0-9-]+$/.test(name ?? '')) throw new Error('Check name required');
+const directory = path.join(root, relativeCwd === 'erp-backend' ? 'erp-backend/audit/evidence/release-closure' : 'audit/evidence/release-closure');
+fs.mkdirSync(directory, { recursive: true });
+const log = fs.createWriteStream(path.join(directory, `${name}.log`));
+const child = spawn(command, args, { cwd: path.resolve(root, relativeCwd), env: process.env, windowsHide: true, shell: false });
+child.stdout.pipe(log, { end: false }); child.stderr.pipe(log, { end: false });
+let spawnError = null; child.on('error', error => { spawnError = error.message; });
+const code = await new Promise(resolve => child.on('close', resolve));
+await new Promise(resolve => log.end(resolve));
+fs.writeFileSync(path.join(directory, `${name}.execution.json`), JSON.stringify({ name, command, args, code, spawnError, finishedAt: new Date().toISOString() }, null, 2));
+console.log(JSON.stringify({ name, code, spawnError })); process.exit(code ?? 1);

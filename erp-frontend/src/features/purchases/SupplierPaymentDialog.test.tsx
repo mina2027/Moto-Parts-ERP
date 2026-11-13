@@ -1,0 +1,25 @@
+import { afterEach, expect, it, vi } from 'vitest';
+import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+const mocks = vi.hoisted(() => ({ recordPayment: vi.fn() }));
+vi.mock('@/services', () => ({ purchaseService: { recordPayment: mocks.recordPayment, get: async () => ({ id: 'po-1', invoiceNumber: 'PO-1', remaining: 100 }) } }));
+vi.mock('@/hooks/useLookups', () => ({ useLookups: () => ({ options: { suppliers: [] }, suppliers: [{ id: 'sup-1', balance: 100 }] }) }));
+vi.mock('@/stores/authStore', () => ({ useAuthStore: (selector: (state: unknown) => unknown) => selector({ session: { user: { id: 'u1' } } }) }));
+vi.mock('@/i18n', () => ({ useT: () => ({ t: (key: string) => key, tx: (value: { ar: string }) => value?.ar ?? '', locale: 'en' }) }));
+vi.mock('sonner', () => ({ toast: { success: vi.fn(), error: vi.fn() } }));
+import { SupplierPaymentDialog } from './SupplierPaymentDialog';
+afterEach(cleanup);
+it('reuses the same request key after a lost response and completes the retry once', async () => {
+  const close = vi.fn();
+  mocks.recordPayment.mockRejectedValueOnce(new Error('network response lost')).mockResolvedValueOnce({ id: 'payment-1' });
+  render(<QueryClientProvider client={new QueryClient({ defaultOptions: { queries: { retry: false } } })}><SupplierPaymentDialog open onOpenChange={close} supplierId="sup-1" purchaseId="po-1" /></QueryClientProvider>);
+  await waitFor(() => expect((screen.getByRole('spinbutton') as HTMLInputElement).value).toBe('100'));
+  const button = screen.getByRole('button', { name: 'common.confirm' });
+  fireEvent.click(button);
+  await waitFor(() => expect(mocks.recordPayment).toHaveBeenCalledTimes(1));
+  await waitFor(() => expect(button).not.toBeDisabled());
+  fireEvent.click(button);
+  await waitFor(() => expect(close).toHaveBeenCalledWith(false));
+  expect(mocks.recordPayment.mock.calls[0]![1]).toBeTruthy();
+  expect(mocks.recordPayment.mock.calls[1]![1]).toBe(mocks.recordPayment.mock.calls[0]![1]);
+});

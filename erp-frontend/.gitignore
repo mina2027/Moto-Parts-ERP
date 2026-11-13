@@ -1,0 +1,11 @@
+node_modules
+dist
+dist-ssr
+.firebase/
+coverage
+*.tsbuildinfo
+*.local
+.env
+.env.*
+!.env.example
+*.log

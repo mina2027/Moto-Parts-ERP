@@ -1,0 +1,1 @@
+export { Barcode, encodeCode128 } from '@moto/ui';

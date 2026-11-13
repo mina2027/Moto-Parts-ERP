@@ -1,0 +1,21 @@
+import { afterEach, expect, it, vi } from 'vitest';
+import { cleanup, fireEvent, render, screen } from '@testing-library/react';
+import { DEFAULT_SETTINGS } from '@moto/shared';
+import type { Sale } from '@moto/shared';
+import { PosLocaleContext } from '../i18n';
+import { ReturnDialog } from './ReturnDialog';
+afterEach(cleanup);
+it('requires an explicit payout method for a mixed return and submits debt-first settlement', async () => {
+  const sale = { id: 's1', invoiceNumber: 'SYNTHETIC-100', date: '2026-10-12T09:00:00.000Z', total: 100, remaining: 50, subtotal: 100, invoiceDiscount: 0, type: 'credit', status: 'completed', items: [{ id: 'i1', productId: 'p1', name: { ar: 'synthetic' }, quantity: 1, returnedQty: 0, unitPrice: 100, subtotal: 100, discount: 0 }] } as Sale;
+  const submit = vi.fn(async input => ({ ...input, id: 'ret-1' }));
+  render(<PosLocaleContext.Provider value="en"><ReturnDialog open onOpenChange={() => undefined} settings={DEFAULT_SETTINGS} findInvoice={async () => sale} recentSales={async () => [sale]} onSubmit={submit} onDone={() => undefined} /></PosLocaleContext.Provider>);
+  fireEvent.click(await screen.findByRole('button', { name: /SYNTHETIC-100/ }));
+  fireEvent.change(screen.getByRole('spinbutton'), { target: { value: '1' } });
+  const button = screen.getByRole('button', { name: /confirm return/i });
+  expect((button as HTMLButtonElement).disabled).toBe(true);
+  fireEvent.click(screen.getByRole('button', { name: /^Cash$/ }));
+  expect((button as HTMLButtonElement).disabled).toBe(false);
+  fireEvent.click(button);
+  expect(submit).toHaveBeenCalledWith(expect.objectContaining({ settlement: 'debt_first', refundMethod: 'cash' }));
+  await screen.findByRole('button', { name: /confirm return/i });
+});

@@ -1,0 +1,23 @@
+import { auditPath, evidenceFiles } from './layout.mjs';
+import fs from 'node:fs';
+import path from 'node:path';
+import { createHash } from 'node:crypto';
+const root = path.resolve(import.meta.dirname, '../..');
+const evidence = path.join(root, 'audit/evidence/final');
+const read = file => { const b = fs.readFileSync(auditPath(path.relative(path.join(root, 'audit'), path.join(evidence, file)))); return b.toString(b[0] === 255 && b[1] === 254 ? 'utf16le' : 'utf8').replace(/^\uFEFF/, ''); };
+const tests = [['backend', [309, 23]], ['frontend', [39, 5, 101, 23]], ['desktop', [110, 5, 101, 23]]].map(([project, expected]) => {
+  const log = `${project}-tests.log`, content = read(log);
+  const counts = [...content.matchAll(/^\s*Tests\s+(\d+) passed \((\d+)\)/gm)].map(m => Number(m[1]));
+  if (JSON.stringify(counts) !== JSON.stringify(expected) || /Tests[^\r\n]*(?:failed|skipped)|FAIL\s/.test(content)) throw new Error(`Incomplete runner: ${log}`);
+  return { project, log: `final/${log}`, counts, passed: counts.reduce((a, b) => a + b, 0), failed: 0, skipped: 0 };
+});
+const codes = JSON.parse(read('execution-results.json'));
+for (const group of ['finalRunnerExitCodes', 'typecheckExitCodes', 'lintExitCodes', 'buildExitCodes']) if (Object.values(codes[group]).some(c => c !== 0)) throw new Error(`Nonzero ${group}`);
+const runtime = JSON.parse(read('runtime/results.json')), ipc = JSON.parse(read('ipc-runtime/results.json')), renderer = JSON.parse(read('renderer/results.json'));
+if (!runtime.passed || !ipc.passed || !renderer.passed || !read('packaged-smoke.log').includes('"smoke":"ok"') || !/Tests\s+1 passed/.test(read('two-terminal-final.log'))) throw new Error('Acceptance incomplete');
+const dependencies = ['backend', 'frontend', 'desktop'].map(project => ({ project, full: JSON.parse(read(`${project}-audit.json`)).metadata.vulnerabilities, omitDev: JSON.parse(read(`${project}-audit-runtime.json`)).metadata.vulnerabilities }));
+const result = { at: new Date().toISOString(), previousPassExecutions: 719, tests, totalPassingExecutions: tests.reduce((sum, run) => sum + run.passed, 0), countedAs: 'Latest complete project runners, including shared-copy executions; targeted reruns/Electron checks excluded', electron: { version: runtime.electron, sqlitePackage: runtime.nativePackage, sqliteVersion: runtime.sqlite, ipcChecks: ipc.checks.length, runtimePassed: true, rendererScenarioPassed: true, realPdfs: renderer.jobs.length + 1, physicalPrints: 0, packagedSmoke: true, packageDirectory: 'final/package-qualified', signature: 'NotSigned' }, dependencies, executionResults: codes, twoTerminalAcceptance: 'final/two-terminal-final.log', releaseRecommendation: 'NOT READY', unresolvedRisks: ['Cross-method/split rejected tender allocation remains blocked; settlement archive/unpair workflow required', 'Paid unreceived purchase cancellation and representative historical receipt allocations require reconciliation', 'Connected-socket revocation, lock/restart/provisioning and print-resource acceptance', 'Remaining Tailwind/build-tool advisories; signed installer/update', 'Authenticated deployment, production-format backup/PITR and historical migration/index approval', 'Accounting scope, physical/provider/endurance/SLA acceptance'], priorEvidence: 'pass3/verification-summary.json' };
+result.evidenceFiles = evidenceFiles('final').map(({ file, source }) => ({ file, sha256: createHash('sha256').update(fs.readFileSync(source)).digest('hex') }));
+fs.writeFileSync(path.join(evidence, 'verification-summary.json'), JSON.stringify(result, null, 2) + '\n');
+fs.writeFileSync(path.join(root, 'audit/evidence/verification-summary.json'), JSON.stringify(result, null, 2) + '\n');
+console.log(JSON.stringify({ total: result.totalPassingExecutions, tests, dependencies, release: result.releaseRecommendation }));
