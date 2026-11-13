@@ -24,7 +24,7 @@ ENV VITE_API_URL=$VITE_API_URL \
     VITE_PUBLIC_URL=$VITE_PUBLIC_URL
 RUN npm run build
 
-FROM nginxinc/nginx-unprivileged:1.27-alpine AS runtime
+FROM nginxinc/nginx-unprivileged:1.31-alpine AS runtime
 USER root
 RUN rm -f /etc/nginx/conf.d/default.conf
 COPY nginx/security-headers.conf /etc/nginx/security-headers.conf
