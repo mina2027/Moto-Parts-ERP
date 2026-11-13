@@ -1,6 +1,6 @@
 # syntax=docker/dockerfile:1
 # Build context is this folder (erp-frontend/) — the project is self-contained.
-FROM node:22-alpine AS build
+FROM node:25-alpine AS build
 WORKDIR /repo
 COPY package.json package-lock.json* .npmrc* ./
 COPY packages/shared/package.json packages/shared/
