@@ -1,6 +1,6 @@
 # syntax=docker/dockerfile:1
 # Build context is this folder (erp-backend/) — the project is self-contained.
-FROM node:22-alpine AS manifests
+FROM node:25-alpine AS manifests
 WORKDIR /repo
 COPY package.json package-lock.json* .npmrc* ./
 COPY packages/shared/package.json packages/shared/
@@ -18,7 +18,7 @@ RUN npm ci --omit=dev --ignore-scripts
 # dist/ already inlines @moto/shared; drop the workspace symlink so it cannot dangle in the runtime image.
 RUN rm -rf node_modules/@moto
 
-FROM node:22-alpine AS runtime
+FROM node:25-alpine AS runtime
 ARG APP_VERSION=0.0.0
 ENV NODE_ENV=production \
     APP_VERSION=$APP_VERSION \
