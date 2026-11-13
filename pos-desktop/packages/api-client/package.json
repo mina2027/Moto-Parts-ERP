@@ -16,7 +16,7 @@
     "@moto/shared": "*"
   },
   "devDependencies": {
-    "typescript": "^5.5.4",
-    "vitest": "5.0.3"
+    "typescript": "^7.0.2",
+    "vitest": "5.1.0"
   }
 }
